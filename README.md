@@ -1,6 +1,6 @@
-# AgentCrew
+# Claudius
 
-A lightweight, fully-owned multi-agent framework with a UI — no LangChain, no CrewAI, just clean Python and Claude.
+A lightweight, fully-owned multi-agent framework with a UI — just clean Python, Claude, and HTML.
 
 ## Structure
 

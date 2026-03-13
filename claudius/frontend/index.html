@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cladius</title>
+    <title>Claudius</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -130,11 +130,14 @@
         /* Layout */
         main {
             flex: 1;
-            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
         }
 
         .panel {
-            height: calc(100vh - 52px);
+            flex: 1;
+            min-height: 0;
             overflow-y: auto;
             padding: 24px;
             display: none;
@@ -769,6 +772,23 @@
                 transform: none;
             }
 
+        .health-banner {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 24px;
+            background: rgba(245,166,35,0.08);
+            border-bottom: 1px solid rgba(245,166,35,0.25);
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--amber);
+            flex-shrink: 0;
+        }
+
+            .health-banner.hidden {
+                display: none;
+            }
+
         ::-webkit-scrollbar {
             width: 5px;
         }
@@ -786,7 +806,7 @@
 <body>
 
     <header>
-        <div class="logo">Claudius</div>
+        <div class="logo">claudius</div>
         <nav>
             <button class="active" onclick="switchTab('agents', this)">Agents</button>
             <button onclick="switchTab('workitems', this)">Work Items</button>
@@ -798,6 +818,8 @@
             <div class="api-label" id="statusLabel">checking...</div>
         </div>
     </header>
+
+    <div id="healthBanner" class="health-banner hidden"></div>
 
     <main>
 
@@ -1330,11 +1352,10 @@
         }
 
         function showHealthBanner(issues) {
-            const banner = document.createElement('div');
-            banner.style.cssText = 'position:fixed;top:52px;left:0;right:0;background:rgba(245,166,35,0.1);border-bottom:1px solid rgba(245,166,35,0.3);padding:8px 24px;font-family:var(--mono);font-size:11px;color:var(--amber);z-index:50;display:flex;align-items:center;gap:16px;';
-            banner.innerHTML = '⚠ ' + issues.map(i => '<span>' + i + '</span>').join(' &nbsp;·&nbsp; ')
-                + '<button onclick="this.parentElement.remove()" style="margin-left:auto;background:none;border:none;color:var(--amber);cursor:pointer;font-size:14px;">×</button>';
-            document.body.appendChild(banner);
+            const banner = document.getElementById('healthBanner');
+            banner.innerHTML = '&#9888;&nbsp;&nbsp;' + issues.join('&nbsp;&nbsp;&middot;&nbsp;&nbsp;')
+                + '<button onclick="document.getElementById(\'healthBanner\').classList.add(\'hidden\')" style="margin-left:auto;background:none;border:none;color:var(--amber);cursor:pointer;font-size:15px;padding:0 4px;">&times;</button>';
+            banner.classList.remove('hidden');
         }
 
         // Check on load and every 30s

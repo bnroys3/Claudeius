@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AgentCrew</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0a0c0f;
+    --bg2:      #111419;
+    --bg3:      #181c23;
+    --border:   #1e242e;
+    --border2:  #2a3040;
+    --text:     #c8d0dc;
+    --text2:    #9baac0;
+    --text3:    #6b7a90;
+    --accent:   #00d4a0;
+    --accent2:  #007a5c;
+    --amber:    #f5a623;
+    --red:      #e05454;
+    --blue:     #4a9eff;
+    --mono:     'IBM Plex Mono', monospace;
+    --sans:     'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 24px;
+    height: 52px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+
+  .logo span { color: var(--text2); }
+
+  nav { display: flex; gap: 2px; margin-left: 32px; }
+
+  nav button {
+    background: none;
+    border: none;
+    padding: 6px 14px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text2);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+
+  nav button:hover { color: var(--text); background: var(--bg3); }
+  nav button.active { color: var(--accent); background: rgba(0,212,160,0.08); }
+
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+  }
+
+  .api-status { font-family: var(--mono); font-size: 11px; color: var(--text2); }
+
+  /* ── Layout ── */
+  main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  .panel {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: none;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .panel.active { display: flex; }
+
+  /* ── Section headers ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text2);
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+
+  .card:hover { border-color: var(--border2); }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg3);
+  }
+
+  .card-icon {
+    width: 28px; height: 28px;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .card-icon.green { background: rgba(0,212,160,0.1); color: var(--accent); }
+  .card-icon.amber { background: rgba(245,166,35,0.1); color: var(--amber); }
+  .card-icon.blue  { background: rgba(74,158,255,0.1); color: var(--blue); }
+
+  .card-name {
+    font-weight: 500;
+    font-size: 14px;
+  }
+
+  .card-role {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    margin-left: auto;
+    background: var(--bg);
+    padding: 2px 8px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+  }
+
+  .card-body { padding: 14px 16px; }
+
+  .field-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+
+  .field-row:last-child { margin-bottom: 0; }
+
+  .field-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+
+  .field-value {
+    color: var(--text2);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 8px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+  }
+
+  .btn-primary:hover { background: #00f0b8; border-color: #00f0b8; }
+
+  .btn-ghost {
+    background: none;
+    color: var(--text2);
+    border-color: var(--border2);
+  }
+
+  .btn-ghost:hover { color: var(--text); border-color: var(--text3); background: var(--bg3); }
+
+  .btn-danger {
+    background: none;
+    color: var(--red);
+    border-color: transparent;
+  }
+
+  .btn-danger:hover { background: rgba(224,84,84,0.1); border-color: var(--red); }
+
+  .btn-run {
+    background: linear-gradient(135deg, var(--accent), var(--blue));
+    color: #000;
+    border: none;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 8px 20px;
+  }
+
+  .btn-run:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,212,160,0.3); }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    width: 520px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    animation: modal-in 0.15s ease;
+  }
+
+  @keyframes modal-in {
+    from { opacity: 0; transform: translateY(-12px) scale(0.98); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .modal-title {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .modal-close {
+    background: none; border: none;
+    color: var(--text2); cursor: pointer;
+    font-size: 18px; padding: 2px 6px;
+    border-radius: 3px; transition: all 0.1s;
+  }
+
+  .modal-close:hover { color: var(--text); background: var(--bg3); }
+
+  .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+
+  .modal-footer {
+    display: flex; gap: 8px; justify-content: flex-end;
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  /* ── Form inputs ── */
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+  .form-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text2);
+  }
+
+  .form-input, .form-textarea, .form-select {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    transition: border-color 0.15s;
+    outline: none;
+  }
+
+  .form-input:focus, .form-textarea:focus, .form-select:focus {
+    border-color: var(--accent2);
+    box-shadow: 0 0 0 2px rgba(0,212,160,0.1);
+  }
+
+  .form-textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+  .form-select option { background: var(--bg2); }
+
+  /* ── Empty state ── */
+  .empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text3);
+    font-size: 13px;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+  }
+
+  .empty-icon { font-size: 28px; margin-bottom: 10px; opacity: 0.4; }
+
+  /* ── Run panel ── */
+  .run-config {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+  }
+
+  .task-queue { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+
+  .task-queue-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .task-queue-item:hover { border-color: var(--border2); }
+  .task-queue-item.selected { border-color: var(--accent2); background: rgba(0,212,160,0.05); }
+
+  .task-checkbox {
+    width: 16px; height: 16px;
+    border: 1px solid var(--border2);
+    border-radius: 3px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    transition: all 0.15s;
+  }
+
+  .task-queue-item.selected .task-checkbox {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+
+  .task-queue-desc { flex: 1; font-size: 13px; }
+  .task-queue-agent { font-family: var(--mono); font-size: 11px; color: var(--text2); }
+
+  /* ── Results ── */
+  .run-results { display: flex; flex-direction: column; gap: 12px; }
+
+  .result-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .result-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .result-status {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+
+  .status-complete { background: rgba(0,212,160,0.1); color: var(--accent); border: 1px solid var(--accent2); }
+  .status-running  { background: rgba(245,166,35,0.1); color: var(--amber); border: 1px solid rgba(245,166,35,0.3); }
+  .status-failed   { background: rgba(224,84,84,0.1);  color: var(--red);   border: 1px solid rgba(224,84,84,0.3); }
+  .status-pending  { background: var(--bg); color: var(--text3); border: 1px solid var(--border); }
+
+  .result-body {
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text2);
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+    background: var(--bg);
+  }
+
+  /* ── Spinner ── */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--amber);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    padding: 10px 16px;
+    border-radius: 5px;
+    font-size: 13px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.2s;
+    z-index: 200;
+    pointer-events: none;
+  }
+
+  #toast.show { opacity: 1; transform: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">agent<span>/</span>crew</div>
+  <nav>
+    <button class="active" onclick="switchTab('agents')">Agents</button>
+    <button onclick="switchTab('tasks')">Tasks</button>
+    <button onclick="switchTab('run')">Run</button>
+    <button onclick="switchTab('history')">History</button>
+  </nav>
+  <div class="header-right">
+    <div class="status-dot"></div>
+    <div class="api-status" id="apiStatus">connected</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── AGENTS ── -->
+  <div class="panel active" id="panel-agents">
+    <div class="section-header">
+      <div class="section-title">Agent Definitions</div>
+      <button class="btn btn-primary" onclick="openAgentModal()">+ New Agent</button>
+    </div>
+    <div id="agentsList"></div>
+  </div>
+
+  <!-- ── TASKS ── -->
+  <div class="panel" id="panel-tasks">
+    <div class="section-header">
+      <div class="section-title">Task Queue</div>
+      <button class="btn btn-primary" onclick="openTaskModal()">+ New Task</button>
+    </div>
+    <div id="tasksList"></div>
+  </div>
+
+  <!-- ── RUN ── -->
+  <div class="panel" id="panel-run">
+    <div class="section-header">
+      <div class="section-title">Execute Crew</div>
+    </div>
+    <div class="run-config">
+      <div class="form-label" style="margin-bottom:10px">Select and order tasks to run</div>
+      <div class="task-queue" id="runTaskList"></div>
+      <div style="display:flex; gap:10px; align-items:center; margin-top:16px">
+        <button class="btn btn-run" onclick="executeRun()">
+          ▶ Run Crew
+        </button>
+        <span style="font-size:12px; color:var(--text2)" id="runTaskCount">0 tasks selected</span>
+      </div>
+    </div>
+    <div>
+      <div class="section-title" style="margin-bottom:12px">Live Output</div>
+      <div class="run-results" id="runResults">
+        <div class="empty">
+          <div class="empty-icon">◎</div>
+          No run in progress. Select tasks above and click Run.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HISTORY ── -->
+  <div class="panel" id="panel-history">
+    <div class="section-header">
+      <div class="section-title">Run History</div>
+      <button class="btn btn-ghost" onclick="loadHistory()">↻ Refresh</button>
+    </div>
+    <div style="font-family:var(--mono); font-size:11px; color:var(--text3); padding:8px 12px; background:var(--bg2); border:1px solid var(--border); border-radius:4px; margin-bottom:16px">
+      ◎ History is stored in <span style="color:var(--text2)">backend/data.json</span> — backend must be running on port 8000.
+    </div>
+    <div id="historyList"></div>
+  </div>
+
+</main>
+
+<!-- ── Agent Modal ── -->
+<div class="modal-overlay" id="agentModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="agentModalTitle">// NEW_AGENT</div>
+      <button class="modal-close" onclick="closeModal('agentModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input class="form-input" id="agentName" placeholder="e.g. Alex" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <input class="form-input" id="agentRole" placeholder="e.g. Senior Code Reviewer" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Goal</label>
+        <textarea class="form-textarea" id="agentGoal" placeholder="What is this agent trying to achieve?"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Backstory</label>
+        <textarea class="form-textarea" id="agentBackstory" placeholder="Background, expertise, personality of this agent..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Model</label>
+        <select class="form-select" id="agentModel">
+          <optgroup label="── Best for most agents ──">
+            <option value="claude-sonnet-4-20250514">claude-sonnet-4  ★ Recommended — best balance of speed &amp; quality</option>
+          </optgroup>
+          <optgroup label="── High complexity tasks ──">
+            <option value="claude-opus-4-20250514">claude-opus-4  — most capable, highest cost (~5× sonnet)</option>
+          </optgroup>
+          <optgroup label="── Routing / triage / cheap tasks ──">
+            <option value="claude-haiku-4-5-20251001">claude-haiku-4.5  ★ Cheapest — great for simple or high-volume agents</option>
+          </optgroup>
+        </select>
+        <div style="font-family:var(--mono); font-size:10px; color:var(--text3); margin-top:5px; line-height:1.6">
+          💡 Tip: Use Haiku for routing/triage agents and Sonnet for reasoning agents to cut costs 40–60%.
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('agentModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAgent()">Save Agent</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Task Modal ── -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">// NEW_TASK</div>
+      <button class="modal-close" onclick="closeModal('taskModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Assign to Agent</label>
+        <select class="form-select" id="taskAgent"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Task Description</label>
+        <textarea class="form-textarea" id="taskDescription" style="min-height:120px"
+          placeholder="Describe what this agent should do. Be specific — mention repo names, PR numbers, or any relevant context."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Expected Output (optional)</label>
+        <input class="form-input" id="taskExpected" placeholder="e.g. A review comment posted on the PR" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('taskModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTask()">Add Task</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = 'http://localhost:8000';
+
+let agents = [];
+let tasks = [];
+let editingAgentId = null;
+let selectedRunTasks = new Set();
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+async function init() {
+  await Promise.all([loadAgents(), loadTasks()]);
+  renderAgents();
+  renderTasks();
+  renderRunPanel();
+}
+
+// ── API helpers ───────────────────────────────────────────────────────────────
+
+async function api(path, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function loadAgents() {
+  try { agents = await api('/agents'); } catch(e) { agents = []; }
+}
+
+async function loadTasks() {
+  try { tasks = await api('/tasks'); } catch(e) { tasks = []; }
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+
+function switchTab(tab) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  event.target.classList.add('active');
+  if (tab === 'run') renderRunPanel();
+  if (tab === 'history') loadHistory();
+}
+
+// ── Agents ────────────────────────────────────────────────────────────────────
+
+const ICONS = ['◈', '◇', '◉', '◎', '◆', '◐'];
+const COLORS = ['green', 'amber', 'blue', 'green', 'amber', 'blue'];
+
+function renderAgents() {
+  const el = document.getElementById('agentsList');
+  if (!agents.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">◈</div>No agents defined. Create your first agent to get started.</div>`;
+    return;
+  }
+  el.innerHTML = agents.map((a, i) => `
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-header">
+        <div class="card-icon ${COLORS[i % COLORS.length]}">${ICONS[i % ICONS.length]}</div>
+        <div class="card-name">${esc(a.name)}</div>
+        <div class="card-role">${esc(a.role)}</div>
+      </div>
+      <div class="card-body">
+        <div class="field-row">
+          <div class="field-label">Goal</div>
+          <div class="field-value">${esc(a.goal)}</div>
+        </div>
+        <div class="field-row">
+          <div class="field-label">Backstory</div>
+          <div class="field-value">${esc(a.backstory)}</div>
+        </div>
+        <div class="field-row">
+          <div class="field-label">Model</div>
+          <div class="field-value" style="font-family:var(--mono); font-size:12px; color:var(--blue)">${esc(a.model)}</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-ghost" onclick="openAgentModal('${a.id}')">✎ Edit</button>
+        <button class="btn btn-danger" onclick="deleteAgent('${a.id}')">✕ Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openAgentModal(id = null) {
+  editingAgentId = id;
+  const modal = document.getElementById('agentModal');
+  document.getElementById('agentModalTitle').textContent = id ? '// EDIT_AGENT' : '// NEW_AGENT';
+
+  if (id) {
+    const a = agents.find(x => x.id === id);
+    document.getElementById('agentName').value = a.name;
+    document.getElementById('agentRole').value = a.role;
+    document.getElementById('agentGoal').value = a.goal;
+    document.getElementById('agentBackstory').value = a.backstory;
+    document.getElementById('agentModel').value = a.model;
+  } else {
+    ['agentName','agentRole','agentGoal','agentBackstory'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('agentModel').value = 'claude-sonnet-4-20250514';
+  }
+
+  modal.classList.add('open');
+}
+
+async function saveAgent() {
+  const data = {
+    name: document.getElementById('agentName').value.trim(),
+    role: document.getElementById('agentRole').value.trim(),
+    goal: document.getElementById('agentGoal').value.trim(),
+    backstory: document.getElementById('agentBackstory').value.trim(),
+    model: document.getElementById('agentModel').value,
+  };
+
+  if (!data.name || !data.role) return toast('Name and role are required');
+
+  try {
+    if (editingAgentId) {
+      await api('/agents/' + editingAgentId, 'PUT', data);
+      toast('Agent updated');
+    } else {
+      await api('/agents', 'POST', data);
+      toast('Agent created');
+    }
+    await loadAgents();
+    renderAgents();
+    closeModal('agentModal');
+  } catch(e) { toast('Error: ' + e.message); }
+}
+
+async function deleteAgent(id) {
+  if (!confirm('Delete this agent?')) return;
+  await api('/agents/' + id, 'DELETE');
+  await loadAgents();
+  renderAgents();
+  toast('Agent deleted');
+}
+
+// ── Tasks ─────────────────────────────────────────────────────────────────────
+
+function renderTasks() {
+  const el = document.getElementById('tasksList');
+  if (!tasks.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">◎</div>No tasks yet. Add a task and assign it to an agent.</div>`;
+    return;
+  }
+  el.innerHTML = tasks.map(t => {
+    const agent = agents.find(a => a.id === t.agent_id);
+    const statusClass = `status-${t.status}`;
+    return `
+      <div class="card" style="margin-bottom:10px">
+        <div class="card-header">
+          <div class="card-icon amber">◎</div>
+          <div style="flex:1; font-size:13px; line-height:1.4">${esc(t.description.slice(0, 80))}${t.description.length > 80 ? '…' : ''}</div>
+          <div class="result-status ${statusClass}">${t.status}</div>
+        </div>
+        <div class="card-body">
+          <div class="field-row">
+            <div class="field-label">Assigned to</div>
+            <div class="field-value">${agent ? esc(agent.name) + ' · ' + esc(agent.role) : '<span style="color:var(--red)">Unknown agent</span>'}</div>
+          </div>
+          ${t.expected_output ? `
+          <div class="field-row">
+            <div class="field-label">Expected output</div>
+            <div class="field-value">${esc(t.expected_output)}</div>
+          </div>` : ''}
+          ${t.result ? `
+          <div class="field-row">
+            <div class="field-label">Last result</div>
+            <div class="field-value" style="font-family:var(--mono); font-size:11px; color:var(--text2); max-height:80px; overflow:hidden">${esc(t.result.slice(0,300))}…</div>
+          </div>` : ''}
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-danger" onclick="deleteTask('${t.id}')">✕ Remove</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openTaskModal() {
+  const sel = document.getElementById('taskAgent');
+  sel.innerHTML = agents.map(a => `<option value="${a.id}">${esc(a.name)} — ${esc(a.role)}</option>`).join('');
+  if (!agents.length) return toast('Create at least one agent first');
+  ['taskDescription','taskExpected'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('taskModal').classList.add('open');
+}
+
+async function saveTask() {
+  const data = {
+    description: document.getElementById('taskDescription').value.trim(),
+    agent_id: document.getElementById('taskAgent').value,
+    expected_output: document.getElementById('taskExpected').value.trim(),
+  };
+  if (!data.description) return toast('Task description is required');
+
+  try {
+    await api('/tasks', 'POST', data);
+    await loadTasks();
+    renderTasks();
+    closeModal('taskModal');
+    toast('Task added');
+  } catch(e) { toast('Error: ' + e.message); }
+}
+
+async function deleteTask(id) {
+  await api('/tasks/' + id, 'DELETE');
+  await loadTasks();
+  renderTasks();
+  selectedRunTasks.delete(id);
+  renderRunPanel();
+  toast('Task removed');
+}
+
+// ── Run ───────────────────────────────────────────────────────────────────────
+
+function renderRunPanel() {
+  const el = document.getElementById('runTaskList');
+  if (!tasks.length) {
+    el.innerHTML = `<div style="color:var(--text3); font-size:13px; padding:8px 0">No tasks defined. Go to the Tasks tab to add some.</div>`;
+    updateRunCount();
+    return;
+  }
+  el.innerHTML = tasks.map(t => {
+    const agent = agents.find(a => a.id === t.agent_id);
+    const sel = selectedRunTasks.has(t.id);
+    return `
+      <div class="task-queue-item ${sel ? 'selected' : ''}" onclick="toggleRunTask('${t.id}')">
+        <div class="task-checkbox">${sel ? '✓' : ''}</div>
+        <div class="task-queue-desc">${esc(t.description.slice(0, 70))}${t.description.length > 70 ? '…' : ''}</div>
+        <div class="task-queue-agent">${agent ? esc(agent.name) : '?'}</div>
+      </div>
+    `;
+  }).join('');
+  updateRunCount();
+}
+
+function toggleRunTask(id) {
+  if (selectedRunTasks.has(id)) selectedRunTasks.delete(id);
+  else selectedRunTasks.add(id);
+  renderRunPanel();
+}
+
+function updateRunCount() {
+  document.getElementById('runTaskCount').textContent = `${selectedRunTasks.size} task${selectedRunTasks.size !== 1 ? 's' : ''} selected`;
+}
+
+async function executeRun() {
+  const ids = [...selectedRunTasks];
+  if (!ids.length) return toast('Select at least one task');
+
+  const resultsEl = document.getElementById('runResults');
+  resultsEl.innerHTML = ids.map(id => {
+    const t = tasks.find(x => x.id === id);
+    const agent = t ? agents.find(a => a.id === t.agent_id) : null;
+    return `
+      <div class="result-card" id="result-${id}">
+        <div class="result-header">
+          <div class="spinner"></div>
+          <div style="font-size:13px">${t ? esc(t.description.slice(0,60)) : id}</div>
+          <div style="margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--text2)">${agent ? esc(agent.name) : ''}</div>
+          <div class="result-status status-running">running</div>
+        </div>
+        <div class="result-body">Waiting for agent output...</div>
+      </div>
+    `;
+  }).join('');
+
+  try {
+    const result = await api('/runs', 'POST', { task_ids: ids });
+    for (const r of result.results) {
+      updateResultCard(r);
+    }
+    await loadTasks();
+    renderTasks();
+    toast('Run complete');
+  } catch(e) {
+    resultsEl.innerHTML = `<div class="empty" style="color:var(--red)">Run failed: ${esc(e.message)}</div>`;
+    toast('Run failed');
+  }
+}
+
+function updateResultCard(result) {
+  const card = document.getElementById('result-' + result.id);
+  if (!card) return;
+  const statusClass = `status-${result.status}`;
+  card.querySelector('.result-header').innerHTML = `
+    <div style="font-size:13px; flex:1">${esc((tasks.find(t=>t.id===result.id)||{description:result.id}).description.slice(0,60))}</div>
+    <div class="result-status ${statusClass}">${result.status}</div>
+  `;
+  card.querySelector('.result-body').textContent = result.result || '(no output)';
+}
+
+// ── History ───────────────────────────────────────────────────────────────────
+
+async function loadHistory() {
+  try {
+    const runs = await api('/runs');
+    const el = document.getElementById('historyList');
+    if (!runs.length) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">◇</div>No runs yet.</div>`;
+      return;
+    }
+    el.innerHTML = [...runs].reverse().map(run => `
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-header">
+          <div class="card-icon blue">◆</div>
+          <div style="font-family:var(--mono); font-size:12px; color:var(--text2)">${run.id.slice(0,8)}</div>
+          <div class="result-status status-${run.status}" style="margin-left:auto">${run.status}</div>
+        </div>
+        <div class="card-body">
+          ${(run.results||[]).map(r => `
+            <div style="margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid var(--border)">
+              <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px">
+                <div class="result-status status-${r.status}">${r.status}</div>
+                <div style="font-size:12px; color:var(--text2)">${esc(r.description ? r.description.slice(0,60) : r.id)}</div>
+              </div>
+              ${r.result ? `<div style="font-family:var(--mono); font-size:11px; color:var(--text3); white-space:pre-wrap; max-height:100px; overflow:hidden">${esc(r.result.slice(0,400))}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    document.getElementById('historyList').innerHTML = `<div class="empty" style="color:var(--red)">Could not reach backend — is <span style="font-family:var(--mono)">uvicorn</span> running on port 8000?</div>`;
+  }
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(o =>
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); })
+);
+
+init();
+</script>
+</body>
+</html>

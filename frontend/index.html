@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Claudius</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <header>
+        <div class="logo">claudius</div>
+        <nav>
+            <button class="active" data-page="agents">Agents</button>
+            <button data-page="workitems">Work Items</button>
+            <button data-page="run">Run</button>
+            <button data-page="history">History</button>
+        </nav>
+        <div class="header-right">
+            <div id="statusDot" class="status-dot" title="Checking..."></div>
+            <div class="api-label" id="statusLabel">checking...</div>
+        </div>
+    </header>
+
+    <div id="healthBanner" class="health-banner hidden"></div>
+
+    <main id="main"></main>
+
+    <!-- Agent Modal -->
+    <div class="modal-overlay" id="agentModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" id="agentModalTitle">// NEW_AGENT</div>
+                <button class="modal-close" onclick="closeModal('agentModal')">&#215;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input class="form-input" id="agentName" placeholder="e.g. Alex" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Role</label>
+                    <input class="form-input" id="agentRole" placeholder="e.g. Senior Code Reviewer" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Goal</label>
+                    <textarea class="form-textarea" id="agentGoal" placeholder="What is this agent trying to achieve?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Backstory</label>
+                    <textarea class="form-textarea" id="agentBackstory" placeholder="Background, expertise, personality..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Model</label>
+                    <select class="form-select" id="agentModel">
+                        <optgroup label="Best for most agents">
+                            <option value="claude-sonnet-4-20250514">claude-sonnet-4  -- Recommended</option>
+                        </optgroup>
+                        <optgroup label="High complexity / orchestrators">
+                            <option value="claude-opus-4-20250514">claude-opus-4  -- most capable (~5x cost)</option>
+                        </optgroup>
+                        <optgroup label="Simple / high-volume workers">
+                            <option value="claude-haiku-4-5-20251001">claude-haiku-4.5  -- Cheapest</option>
+                        </optgroup>
+                    </select>
+                    <div class="form-hint">Tip: Use Haiku for simple workers, Sonnet for reasoning, Opus for orchestrators on complex projects.</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Type</label>
+                    <div class="toggle-row" onclick="toggleOrchestrator()">
+                        <div class="toggle" id="orchToggle"></div>
+                        <div>
+                            <div class="toggle-label" id="orchToggleLabel">Worker agent</div>
+                            <div class="toggle-sub">Toggle on to make this an Orchestrator that routes tasks to workers</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('agentModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveAgent()">Save Agent</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Work Item Modal -->
+    <div class="modal-overlay" id="workItemModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">// NEW_WORK_ITEM</div>
+                <button class="modal-close" onclick="closeModal('workItemModal')">&#215;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" id="workItemDesc" style="min-height:120px"
+                              placeholder="Describe what needs to be done. Be specific -- include repo names, PR numbers, branch names, or any relevant context."></textarea>
+                    <div class="form-hint">The orchestrator will read this and decide which agents to involve and in what order.</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('workItemModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveWorkItem()">Add Work Item</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <!-- compiled from ts/ via: npx tsc (run automatically by start.py) -->
+    <script type="module" src="js/app.js"></script>
+    <script type="module" src="js/agents.js"></script>
+    <script type="module" src="js/workitems.js"></script>
+    <script type="module" src="js/run.js"></script>
+    <script type="module" src="js/history.js"></script>
+
+</body>
+</html>

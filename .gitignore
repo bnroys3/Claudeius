@@ -7,9 +7,11 @@
 *.js.map
 *.ts.map
 
+/frontend/js
 
-/claudius/backend/__pycache__
-/claudius/desktop.ini
-/claudius/frontend/node_modules
+/backend/__pycache__
+/desktop.ini
+/frontend/node_modules
 /backend/data.json
-/backend/agent_files
+/backend/workspace
+/backend/__pycache__/crew.cpython-312.pyc

@@ -7,13 +7,14 @@ from pathlib import Path
 from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from crew import Agent, WorkItem, OrchestratorCrew
 from github_tools import register_all_tools
 
-# ── Logging setup ─────────────────────────────────────────────────────────────
+# -- Logging setup -------------------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
@@ -21,10 +22,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("agentcrew")
 
-# Register all GitHub + filesystem tools at startup
 register_all_tools()
 
-app = FastAPI(title="AgentCrew API")
+app = FastAPI(title="Claudius API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,10 +33,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DATA_FILE = Path("data.json")
+DATA_FILE    = Path("data.json")
+FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
 
 
-# -- Health check -------------------------------------------------------------
+# -- Health check --------------------------------------------------------------
 
 @app.get("/health")
 def health():
@@ -55,7 +56,7 @@ def health():
     }
 
 
-# ── Persistence ───────────────────────────────────────────────────────────────
+# -- Persistence ---------------------------------------------------------------
 
 def load_data() -> dict:
     if DATA_FILE.exists():
@@ -67,7 +68,7 @@ def save_data(data: dict):
     DATA_FILE.write_text(json.dumps(data, indent=2))
 
 
-# ── Pydantic models ───────────────────────────────────────────────────────────
+# -- Pydantic models -----------------------------------------------------------
 
 class AgentCreate(BaseModel):
     name: str
@@ -96,7 +97,7 @@ class RunCreate(BaseModel):
     orchestrator_id: str
 
 
-# ── Agent endpoints ───────────────────────────────────────────────────────────
+# -- Agent endpoints -----------------------------------------------------------
 
 @app.get("/agents")
 def list_agents():
@@ -135,7 +136,7 @@ def delete_agent(agent_id: str):
     return {"deleted": agent_id}
 
 
-# ── Work item endpoints ───────────────────────────────────────────────────────
+# -- Work item endpoints -------------------------------------------------------
 
 @app.get("/work-items")
 def list_work_items():
@@ -165,7 +166,7 @@ def delete_work_item(item_id: str):
     return {"deleted": item_id}
 
 
-# ── Run endpoints ─────────────────────────────────────────────────────────────
+# -- Run endpoints -------------------------------------------------------------
 
 @app.get("/runs")
 def list_runs():
@@ -185,25 +186,22 @@ def get_run(run_id: str):
 async def create_run(body: RunCreate):
     data = load_data()
 
-    # Validate work item
     work_item_data = next((w for w in data["work_items"] if w["id"] == body.work_item_id), None)
     if not work_item_data:
         raise HTTPException(status_code=404, detail="Work item not found")
 
-    # Validate orchestrator
     orch_data = next((a for a in data["agents"] if a["id"] == body.orchestrator_id), None)
     if not orch_data:
         raise HTTPException(status_code=404, detail="Orchestrator agent not found")
     if not orch_data.get("is_orchestrator"):
         raise HTTPException(status_code=400, detail="Specified agent is not marked as an orchestrator")
 
-    # Workers = all non-orchestrator agents
     workers = [Agent.from_dict(a) for a in data["agents"] if not a.get("is_orchestrator")]
     if not workers:
         raise HTTPException(status_code=400, detail="No worker agents defined")
 
     orchestrator = Agent.from_dict(orch_data)
-    work_item = WorkItem.from_dict(work_item_data)
+    work_item    = WorkItem.from_dict(work_item_data)
 
     run_id = str(uuid.uuid4())
     run_record = {
@@ -216,17 +214,14 @@ async def create_run(body: RunCreate):
         "logs": [],
     }
     data["runs"].append(run_record)
-    # Mark work item as running
     for i, w in enumerate(data["work_items"]):
         if w["id"] == body.work_item_id:
             data["work_items"][i]["status"] = "running"
     save_data(data)
 
-    logger.info("Run %s started — work item: %s | orchestrator: %s",
-                run_id, work_item.id, orchestrator.name)
+    logger.info("Run %s started | orchestrator: %s", run_id, orchestrator.name)
 
     def on_log(entry: dict):
-        """Append log entry to run record in real time."""
         d = load_data()
         for i, r in enumerate(d["runs"]):
             if r["id"] == run_id:
@@ -235,19 +230,17 @@ async def create_run(body: RunCreate):
         save_data(d)
 
     crew = OrchestratorCrew(orchestrator, workers)
-
     loop = asyncio.get_event_loop()
     run_result = await loop.run_in_executor(
         None, lambda: crew.run(work_item, on_log=on_log)
     )
 
-    # Finalize
     d = load_data()
     for i, r in enumerate(d["runs"]):
         if r["id"] == run_id:
             d["runs"][i]["status"] = run_result["status"]
             d["runs"][i]["result"] = run_result["result"]
-            d["runs"][i]["logs"] = run_result["logs"]
+            d["runs"][i]["logs"]   = run_result["logs"]
             break
     for i, w in enumerate(d["work_items"]):
         if w["id"] == body.work_item_id:
@@ -255,12 +248,15 @@ async def create_run(body: RunCreate):
             d["work_items"][i]["result"] = run_result["result"]
     save_data(d)
 
-    logger.info("Run %s finished — status: %s", run_id, run_result["status"])
+    logger.info("Run %s finished | status: %s", run_id, run_result["status"])
     return {"run_id": run_id, **run_result}
 
 
-# ── Serve frontend ────────────────────────────────────────────────────────────
+# -- Serve frontend ------------------------------------------------------------
+# The explicit "/" route must come before the StaticFiles mount
 
 @app.get("/")
 def serve_frontend():
-    return FileResponse("../frontend/index.html")
+    return FileResponse(FRONTEND_DIR / "index.html")
+
+app.mount("/", StaticFiles(directory=str(FRONTEND_DIR)), name="frontend")

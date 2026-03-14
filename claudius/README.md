@@ -10,10 +10,29 @@ claudius/
     claude_client.py # Claude API wrapper with tool use
     github_tools.py  # GitHub + filesystem tools
   frontend/
-    index.html       # Single-file UI
-  requirements.txt
-  start.py
+    index.html          ← shell only: header, banner, modals, script tags
+    tsconfig.json
+    styles.css          ← all CSS
+    pages/
+      agents.html       ← agents panel scaffold
+      workitems.html    ← work items panel scaffold
+      run.html          ← run panel scaffold
+      history.html      ← history panel scaffold
+    ts/
+      app.ts            ← init, api(), switchTab(), health check, utils
+      agents.ts         ← agent render/modal/CRUD
+      workitems.ts      ← work item render/modal/CRUD
+      run.ts            ← run execution, log streaming
+      history.ts        ← history loading/rendering
+    requirements.txt
+    start.py
 ```
+
+## Prerequisites
+
+- Python 3.10+ — python.org
+- Node.js 18+ — nodejs.org — required to compile TypeScript on startup
+- Git — for GitHub operations
 
 ## Setup
 

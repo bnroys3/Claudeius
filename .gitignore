@@ -5,3 +5,5 @@
 /.vs
 /claudius/backend/__pycache__
 /claudius/desktop.ini
+/claudius/start.log
+/claudius/frontend/node_modules

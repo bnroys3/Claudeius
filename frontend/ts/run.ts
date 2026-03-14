@@ -1,4 +1,4 @@
-import { api, agents, workItems, loadWorkItems, esc, toast, toggleLogData } from './app.js';
+import { api, agents, workItems, loadWorkItems, esc, toast } from './app.js';
 import type { LogEntry, Run, RunStarted } from './types.js';
 
 const POLL_INTERVAL_MS = 2000;

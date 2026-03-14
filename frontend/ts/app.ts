@@ -43,11 +43,11 @@ interface PageWindow extends Window {
   renderAgents: () => void;
   renderWorkItems: () => void;
   renderRunPanel: () => void;
-  loadHistory: () => void;
+  loadHistory: () => Promise<void>;
   _healthBannerShown?: boolean;
 }
 
-export async function switchTab(page: string, btn: HTMLElement): void {
+export async function switchTab(page: string, btn: HTMLElement): Promise<void> {
   document.querySelectorAll<HTMLButtonElement>('nav button')
     .forEach(b => b.classList.remove('active'));
   btn.classList.add('active');

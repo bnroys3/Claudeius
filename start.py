@@ -78,7 +78,7 @@ def wait_for_server(timeout=20):
     return False
 
 
-p("=== Claudius ===")
+p("=== Claudeius ===")
 check_env()
 
 if check_node():

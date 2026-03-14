@@ -5,7 +5,7 @@ from typing import Any, Callable, Optional
 
 import anthropic
 
-logger = logging.getLogger("agentcrew")
+logger = logging.getLogger("claudius")
 client = anthropic.Anthropic()
 DEFAULT_MODEL = "claude-sonnet-4-20250514"
 

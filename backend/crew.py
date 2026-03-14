@@ -9,7 +9,7 @@ from claude_client import call_claude
 from github_tools import GITHUB_TOOLS
 
 # -- Standard Python logger (writes to uvicorn console) -----------------------
-logger = logging.getLogger("agentcrew")
+logger = logging.getLogger("claudius")
 
 MAX_ITERATIONS = 15  # Hard safety cap on orchestrator loops
 
@@ -88,6 +88,7 @@ class Agent:
 class WorkItem:
     id: str
     description: str
+    repo: str = ""
     status: str = "pending"   # pending | running | complete | failed
     result: Optional[str] = None
 
@@ -95,6 +96,7 @@ class WorkItem:
         return {
             "id": self.id,
             "description": self.description,
+            "repo": self.repo,
             "status": self.status,
             "result": self.result,
         }
@@ -104,6 +106,7 @@ class WorkItem:
         return cls(
             id=data["id"],
             description=data["description"],
+            repo=data.get("repo", ""),
             status=data.get("status", "pending"),
             result=data.get("result"),
         )
@@ -145,7 +148,10 @@ class OrchestratorCrew:
             '{"done": true, "summary": "<concise summary of everything accomplished>"}'
         )
 
-        user = f"## Work Item\n{work_item}\n\n## Iteration\n{iteration} of {MAX_ITERATIONS}"
+        repo_line = (f"\n\n## GitHub Repository\n{work_item.repo}\n"
+                     "(Always use this exact string as the repo parameter in GitHub tool calls.)")  \
+                    if work_item.repo else ""
+        user = f"## Work Item\n{work_item.description}{repo_line}\n\n## Iteration\n{iteration} of {MAX_ITERATIONS}"
         if context:
             user += f"\n\n## Work Done So Far\n{context}"
         else:

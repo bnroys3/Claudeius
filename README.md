@@ -1,9 +1,9 @@
-# Claudius
-A lightweight, fully-owned multi-agent framework with a UI — just clean Python, HTML, and Claude.
+# Claudeius
+A lightweight, fully-owned multi-agent framework with a UI. Based in Python and interfacing with Claude.
 
 ## Structure
 ```
-claudius/
+claudeius/
   backend/
     main.py          # FastAPI server + REST API
     crew.py          # Agent, WorkItem, OrchestratorCrew classes
@@ -38,7 +38,7 @@ claudius/
 
 **1. Install dependencies**
 
-Run this from the root `claudius/` folder (where `requirements.txt` lives):
+Run this from the root `claudeius/` folder (where `requirements.txt` lives):
 ```bash
 pip install -r requirements.txt
 ```
@@ -54,7 +54,7 @@ export GITHUB_TOKEN=your_github_pat_here   # needs repo + pull_requests scope
 python start.py
 ```
 
-This starts the backend and opens the browser automatically. That's it.
+This starts the backend and opens the browser automatically.
 
 > All data including run history is stored in `backend/data.json` (plain JSON, no database). It is created automatically on first run.
 

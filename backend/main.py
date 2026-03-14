@@ -1,11 +1,10 @@
 import os
 import json
 import uuid
-import asyncio
 import logging
 from pathlib import Path
 from typing import Optional
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,11 +19,11 @@ logging.basicConfig(
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
-logger = logging.getLogger("agentcrew")
+logger = logging.getLogger("claudeius")
 
 register_all_tools()
 
-app = FastAPI(title="Claudius API")
+app = FastAPI(title="Claudeius API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -90,6 +89,7 @@ class AgentUpdate(BaseModel):
 
 class WorkItemCreate(BaseModel):
     description: str
+    repo: str = ""
 
 
 class RunCreate(BaseModel):
@@ -149,6 +149,7 @@ def create_work_item(body: WorkItemCreate):
     item = {
         "id": str(uuid.uuid4()),
         "description": body.description,
+        "repo": body.repo,
         "status": "pending",
         "result": None,
     }
@@ -182,8 +183,36 @@ def get_run(run_id: str):
     raise HTTPException(status_code=404, detail="Run not found")
 
 
+def _execute_run(run_id: str, work_item: WorkItem, orchestrator: Agent, workers: list) -> None:
+    """Run the crew in a background thread."""
+    def on_log(entry: dict):
+        d = load_data()
+        for i, r in enumerate(d["runs"]):
+            if r["id"] == run_id:
+                d["runs"][i]["logs"].append(entry)
+                break
+        save_data(d)
+
+    crew = OrchestratorCrew(orchestrator, workers)
+    run_result = crew.run(work_item, on_log=on_log)
+
+    d = load_data()
+    for i, r in enumerate(d["runs"]):
+        if r["id"] == run_id:
+            d["runs"][i]["status"] = run_result["status"]
+            d["runs"][i]["result"] = run_result["result"]
+            d["runs"][i]["logs"]   = run_result["logs"]
+            break
+    for i, w in enumerate(d["work_items"]):
+        if w["id"] == work_item.id:
+            d["work_items"][i]["status"] = run_result["status"]
+            d["work_items"][i]["result"] = run_result["result"]
+    save_data(d)
+    logger.info("Run %s finished | status: %s", run_id, run_result["status"])
+
+
 @app.post("/runs")
-async def create_run(body: RunCreate):
+async def create_run(body: RunCreate, background_tasks: BackgroundTasks):
     data = load_data()
 
     work_item_data = next((w for w in data["work_items"] if w["id"] == body.work_item_id), None)
@@ -221,35 +250,9 @@ async def create_run(body: RunCreate):
 
     logger.info("Run %s started | orchestrator: %s", run_id, orchestrator.name)
 
-    def on_log(entry: dict):
-        d = load_data()
-        for i, r in enumerate(d["runs"]):
-            if r["id"] == run_id:
-                d["runs"][i]["logs"].append(entry)
-                break
-        save_data(d)
-
-    crew = OrchestratorCrew(orchestrator, workers)
-    loop = asyncio.get_event_loop()
-    run_result = await loop.run_in_executor(
-        None, lambda: crew.run(work_item, on_log=on_log)
-    )
-
-    d = load_data()
-    for i, r in enumerate(d["runs"]):
-        if r["id"] == run_id:
-            d["runs"][i]["status"] = run_result["status"]
-            d["runs"][i]["result"] = run_result["result"]
-            d["runs"][i]["logs"]   = run_result["logs"]
-            break
-    for i, w in enumerate(d["work_items"]):
-        if w["id"] == body.work_item_id:
-            d["work_items"][i]["status"] = run_result["status"]
-            d["work_items"][i]["result"] = run_result["result"]
-    save_data(d)
-
-    logger.info("Run %s finished | status: %s", run_id, run_result["status"])
-    return {"run_id": run_id, **run_result}
+    # Return immediately — run happens in background
+    background_tasks.add_task(_execute_run, run_id, work_item, orchestrator, workers)
+    return {"run_id": run_id, "status": "running"}
 
 
 # -- Serve frontend ------------------------------------------------------------

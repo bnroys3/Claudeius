@@ -1,0 +1,54 @@
+{
+  "name": "neon-runner",
+  "version": "1.0.0",
+  "description": "A cyberpunk-themed endless runner game built with HTML5 Canvas and JavaScript",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "start": "npx http-server . -p 8080 -o",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint js/**/*.js main.js",
+    "lint:fix": "eslint js/**/*.js main.js --fix",
+    "build": "echo 'No build process required for vanilla JS'",
+    "dev": "npx http-server . -p 8080 -o -c-1"
+  },
+  "keywords": [
+    "game",
+    "javascript",
+    "canvas",
+    "cyberpunk",
+    "endless-runner",
+    "neon",
+    "web-game"
+  ],
+  "author": "Neon Runner Team",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "eslint": "^8.57.0",
+    "@jest/globals": "^29.7.0"
+  },
+  "dependencies": {},
+  "jest": {
+    "testEnvironment": "jsdom",
+    "setupFilesAfterEnv": ["<rootDir>/test/setupTests.js"],
+    "moduleFileExtensions": ["js", "json"],
+    "transform": {},
+    "testMatch": [
+      "**/test/**/*.test.js",
+      "**/__tests__/**/*.js"
+    ],
+    "collectCoverageFrom": [
+      "js/**/*.js",
+      "main.js",
+      "!**/node_modules/**",
+      "!**/test/**"
+    ]
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

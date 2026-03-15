@@ -11,7 +11,9 @@ from github_tools import GITHUB_TOOLS
 # -- Standard Python logger (writes to uvicorn console) -----------------------
 logger = logging.getLogger("claudeius")
 
-MAX_ITERATIONS = 15  # Hard safety cap on orchestrator loops
+MAX_ITERATIONS       = 15     # Hard safety cap on orchestrator loops
+MAX_CONTEXT_CHARS    = 24000  # ~6k tokens — trim older iterations beyond this
+MAX_AGENT_RESULT_CHARS = 6000  # Cap how much of an agent result goes into context
 
 
 # -- Log entry helpers ---------------------------------------------------------
@@ -27,6 +29,43 @@ def log_entry(kind: str, message: str, data: dict = None) -> dict:
         entry["data"] = data
     logger.info("[%s] %s %s", kind.upper(), message, json.dumps(data or {}))
     return entry
+
+
+def _trim_context(context: str, max_chars: int = MAX_CONTEXT_CHARS) -> str:
+    """
+    If context exceeds max_chars, keep a header note and the most recent content.
+    Splits on iteration markers so we don't cut mid-block.
+    """
+    if len(context) <= max_chars:
+        return context
+
+    # Split into iteration blocks
+    blocks = context.split("
+
+### Iteration ")
+    header = blocks[0]  # Any preamble before first iteration
+
+    # Always keep as many recent blocks as fit
+    kept = []
+    chars_used = 0
+    for block in reversed(blocks[1:]):
+        block_text = "
+
+### Iteration " + block
+        if chars_used + len(block_text) <= max_chars - 200:
+            kept.insert(0, block_text)
+            chars_used += len(block_text)
+        else:
+            break
+
+    dropped = len(blocks) - 1 - len(kept)
+    trim_note = f"
+
+[Context trimmed: {dropped} earlier iteration(s) removed to stay within token limits]
+"
+    logger.info("Context trimmed: dropped %d iterations, kept %d, total chars: %d",
+                dropped, len(kept), chars_used)
+    return trim_note + "".join(kept)
 
 
 # -- Agent ---------------------------------------------------------------------
@@ -182,6 +221,7 @@ class OrchestratorCrew:
             })
 
             system, user = self._orchestrator_prompts(work_item, context, iteration)
+            logger.info("Orchestrator call: context=%d chars (~%d tokens)", len(context), len(context) // 4)
 
             try:
                 raw = call_claude(system, user, tools=[], model=self.orchestrator.model)
@@ -248,17 +288,27 @@ class OrchestratorCrew:
                     on_log(entry)
 
             try:
-                result = agent.run(subtask, context, on_log=agent_log)
+                # Workers get a trimmed context to keep their input cost down
+                agent_context = _trim_context(context, max_chars=12000)
+                result = agent.run(subtask, agent_context, on_log=agent_log)
                 elapsed = round(time.time() - agent_start, 1)
                 emit("agent_complete", f"{agent.name} finished in {elapsed}s", {
                     "agent_name": agent.name,
                     "elapsed_seconds": elapsed,
                     "result_preview": result[:300],
                 })
+                # Cap individual agent results before adding to context
+                result_for_context = result
+                if len(result) > MAX_AGENT_RESULT_CHARS:
+                    result_for_context = result[:MAX_AGENT_RESULT_CHARS] + f"\n... [agent output truncated: {len(result)} chars total]"
+                    logger.info("Agent result truncated for context: %d -> %d chars", len(result), MAX_AGENT_RESULT_CHARS)
+
                 context += (
                     f"\n\n### Iteration {iteration} - {agent.name} ({agent.role})\n"
-                    f"**Task:** {subtask}\n\n**Output:**\n{result}"
+                    f"**Task:** {subtask}\n\n**Output:**\n{result_for_context}"
                 )
+                # Trim total context if it's grown too large
+                context = _trim_context(context)
             except Exception as e:
                 elapsed = round(time.time() - agent_start, 1)
                 emit("error", f"{agent.name} raised an exception after {elapsed}s", {

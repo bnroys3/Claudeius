@@ -9,7 +9,7 @@ from claude_client import call_claude
 from github_tools import GITHUB_TOOLS
 
 # -- Standard Python logger (writes to uvicorn console) -----------------------
-logger = logging.getLogger("claudius")
+logger = logging.getLogger("claudeius")
 
 MAX_ITERATIONS = 15  # Hard safety cap on orchestrator loops
 
@@ -124,7 +124,7 @@ class OrchestratorCrew:
         self.orchestrator = orchestrator
         self.workers = {a.id: a for a in workers}
 
-    def _orchestrator_prompts(self, work_item: str, context: str, iteration: int) -> tuple[str, str]:
+    def _orchestrator_prompts(self, work_item: "WorkItem", context: str, iteration: int) -> tuple[str, str]:
         worker_descriptions = "\n".join(
             f'- id: "{a.id}" | name: {a.name} | role: {a.role} | goal: {a.goal}'
             for a in self.workers.values()
@@ -181,7 +181,7 @@ class OrchestratorCrew:
                 "iteration": iteration,
             })
 
-            system, user = self._orchestrator_prompts(work_item.description, context, iteration)
+            system, user = self._orchestrator_prompts(work_item, context, iteration)
 
             try:
                 raw = call_claude(system, user, tools=[], model=self.orchestrator.model)

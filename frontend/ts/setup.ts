@@ -144,6 +144,33 @@ function handleProposal(proposal: ProposalResponse): void {
   box.innerHTML = renderProposal(proposal);
 }
 
+function modelCost(model: string): { input: number; output: number; label: string } {
+  // Cost per million tokens (March 2026 pricing)
+  if (model.includes('opus'))   return { input: 15,  output: 75,  label: 'opus-4' };
+  if (model.includes('haiku'))  return { input: 0.8, output: 4,   label: 'haiku-4.5' };
+  return                               { input: 3,   output: 15,  label: 'sonnet-4' };
+}
+
+function estimateCost(agents: ProposedAgent[]): string {
+  // Rough estimate: orchestrator makes ~8 decisions, each worker runs ~3 times
+  // Each call: ~2k input tokens, ~1k output tokens
+  let totalMin = 0;
+  let totalMax = 0;
+
+  for (const a of agents) {
+    const cost = modelCost(a.model);
+    const calls = a.is_orchestrator ? 8 : 3;
+    const inputTokens  = calls * 2000 / 1_000_000;
+    const outputTokens = calls * 1000 / 1_000_000;
+    const perRun = inputTokens * cost.input + outputTokens * cost.output;
+    totalMin += perRun * 0.5;
+    totalMax += perRun * 2.5;
+  }
+
+  const fmt = (n: number) => n < 0.01 ? '<$0.01' : `$${n.toFixed(2)}`;
+  return `${fmt(totalMin)} - ${fmt(totalMax)}`;
+}
+
 function renderProposal(proposal: ProposalResponse): string {
   const modelShort = (m: string) => {
     if (m.includes('opus'))   return 'opus-4';
@@ -192,9 +219,12 @@ function renderProposal(proposal: ProposalResponse): string {
         </div>` : ''}
       </div>
 
-      <div style="padding:12px 16px; border-top:1px solid var(--border); display:flex; gap:10px; background:var(--bg);">
+      <div style="padding:12px 16px; border-top:1px solid var(--border); display:flex; gap:10px; align-items:center; background:var(--bg);">
         <button class="btn btn-run" onclick="confirmProposal()">&#10003; Confirm &amp; Run</button>
         <button class="btn btn-ghost" onclick="rejectProposal()">Ask for changes</button>
+        <div style="margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--text3)">
+          Est. cost: <span style="color:var(--text2)">${estimateCost(proposal.agents)}</span>
+        </div>
       </div>
     </div>
 

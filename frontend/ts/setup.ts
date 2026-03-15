@@ -152,23 +152,36 @@ function modelCost(model: string): { input: number; output: number; label: strin
 }
 
 function estimateCost(agents: ProposedAgent[]): string {
-  // Rough estimate: orchestrator makes ~8 decisions, each worker runs ~3 times
-  // Each call: ~2k input tokens, ~1k output tokens
-  let totalMin = 0;
-  let totalMax = 0;
+  // Based on observed real usage:
+  // - Orchestrator: ~8 routing decisions, ~3k tokens each (growing context)
+  // - Worker: ~1-2 turns per orchestrator iteration, each turn has ~12 tool rounds
+  //   Tool rounds grow from ~300 to ~7k tokens as context accumulates
+  //   Average ~4k tokens/round across a full turn = ~48k tokens per worker turn
+  // - Workers typically invoked 2-4 times per run
+  // All figures include both input and output tokens combined at input pricing
+  // (output is higher but workers produce less output than they consume in input)
+
+  let totalMid = 0;
 
   for (const a of agents) {
     const cost = modelCost(a.model);
-    const calls = a.is_orchestrator ? 8 : 3;
-    const inputTokens  = calls * 2000 / 1_000_000;
-    const outputTokens = calls * 1000 / 1_000_000;
-    const perRun = inputTokens * cost.input + outputTokens * cost.output;
-    totalMin += perRun * 0.5;
-    totalMax += perRun * 2.5;
+    // blended $/M tokens (input-heavy workloads)
+    const blended = (cost.input * 0.8 + cost.output * 0.2) / 1_000_000;
+
+    if (a.is_orchestrator) {
+      // 8 decisions x ~3k tokens each
+      totalMid += 8 * 3000 * blended;
+    } else {
+      // 3 worker turns x 12 tool rounds x avg 4k tokens/round
+      totalMid += 3 * 12 * 4000 * blended;
+    }
   }
 
+  const lo  = totalMid * 0.4;   // optimistic (simple task, few tool rounds)
+  const hi  = totalMid * 3.0;   // pessimistic (complex task, lots of file reads)
+
   const fmt = (n: number) => n < 0.01 ? '<$0.01' : `$${n.toFixed(2)}`;
-  return `${fmt(totalMin)} - ${fmt(totalMax)}`;
+  return `${fmt(lo)} - ${fmt(hi)} (mid ~${fmt(totalMid)})`;
 }
 
 function renderProposal(proposal: ProposalResponse): string {

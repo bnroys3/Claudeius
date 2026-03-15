@@ -12,7 +12,7 @@ from github_tools import GITHUB_TOOLS
 logger = logging.getLogger("claudeius")
 
 MAX_ITERATIONS       = 15     # Hard safety cap on orchestrator loops
-MAX_CONTEXT_CHARS    = 24000  # ~6k tokens — trim older iterations beyond this
+MAX_CONTEXT_CHARS    = 24000  # ~6k tokens â€” trim older iterations beyond this
 MAX_AGENT_RESULT_CHARS = 6000  # Cap how much of an agent result goes into context
 
 
@@ -168,6 +168,7 @@ class OrchestratorCrew:
             f"Background: {self.orchestrator.backstory}\n\n"
             "You coordinate a team of specialist agents to complete work items. "
             "You never do the work yourself - you delegate to the right agent.\n\n"
+            "IMPORTANT: Give workers NARROW, focused subtasks with a single clear deliverable. Each subtask should require no more than 8-10 tool calls. Break large tasks into multiple orchestrator iterations rather than one huge worker task.\n\n"
             "Your available workers:\n"
             f"{worker_descriptions}\n\n"
             "At each step, review the work item and all context so far, then respond "

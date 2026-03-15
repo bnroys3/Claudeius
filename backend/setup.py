@@ -50,6 +50,13 @@ Backstories matter — they shape how the agent reasons. Write 2-3 sentences tha
 - A key philosophy or approach they bring
 - What makes them distinctly good at their role
 
+== SUBTASK GRANULARITY ==
+Each subtask given to a worker should have ONE clear deliverable and require NO MORE than 8-10 tool calls.
+Bad: "Clone the repo, explore all files, analyze bugs, and document findings"
+Good: "Clone the repo into workspace/ and list the top-level directory structure"
+Then the orchestrator reviews and assigns the next focused step.
+Workers that try to do too much in one turn burn tokens and hit rate limits.
+
 == SCOPE AWARENESS ==
 For complex goals (building a full app, major refactors, multi-phase projects):
 - DO NOT propose doing everything at once

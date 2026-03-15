@@ -11,8 +11,8 @@ DEFAULT_MODEL = "claude-sonnet-4-20250514"
 
 # ── Limits ────────────────────────────────────────────────────────────────────
 
-MAX_TOOL_RESULT_CHARS = 3000   # Tool results larger than this get truncated
-MAX_TOOL_ROUNDS       = 20     # Max tool call rounds per agent turn (safety cap)
+MAX_TOOL_RESULT_CHARS = 2000   # Tool results larger than this get truncated
+MAX_TOOL_ROUNDS       = 12     # Max tool call rounds per agent turn (safety cap)
 
 # ── Tool registry ─────────────────────────────────────────────────────────────
 

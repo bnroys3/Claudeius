@@ -108,20 +108,22 @@ def create_pull_request(repo: str, title: str, body: str, head: str, base: str =
 # ── Filesystem / local tools ──────────────────────────────────────────────────
 
 def read_local_file(path: str) -> dict:
-    """Read a local file."""
-    with open(path, "r") as f:
-        return {"path": path, "content": f.read()}
+    """Read a local file. Always uses UTF-8 encoding."""
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return {"path": path, "content": f.read()}
+    except UnicodeDecodeError:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            return {"path": path, "content": f.read(), "note": "Some characters replaced due to encoding"}
 
 
 def write_local_file(path: str, content: str) -> dict:
     """Write content to a local file. Path must be inside workspace/ folder."""
     import os
     from pathlib import Path
-    # Enforce workspace/ prefix - prevent agents writing outside their sandbox
     safe_path = path.lstrip("/\\")
     if not safe_path.startswith("workspace/") and not safe_path.startswith("workspace\\"):
         safe_path = "workspace/" + safe_path
-    # Create parent directories if needed
     Path(safe_path).parent.mkdir(parents=True, exist_ok=True)
     with open(safe_path, "w", encoding="utf-8") as f:
         f.write(content)
@@ -129,9 +131,11 @@ def write_local_file(path: str, content: str) -> dict:
 
 
 def run_command(command: str, cwd: str = ".") -> dict:
-    """Run a shell command (e.g. tests, linting)."""
+    """Run a shell command. Always uses UTF-8 output encoding."""
     result = subprocess.run(
-        command, shell=True, capture_output=True, text=True, cwd=cwd, timeout=60
+        command, shell=True, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+        cwd=cwd, timeout=120
     )
     return {
         "stdout": result.stdout,
